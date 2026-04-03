@@ -434,7 +434,7 @@ def get_decoder_mask(address_list):
             break
   
     for bit_path in tree_dict:
-        if len(tree_dict[bit_path]) > 0:
+        if tree_dict[bit_path] != []:
             add_bits = tree_dict[bit_path][0]
             add = ""
             for n in reversed(list(range(32))):
@@ -690,8 +690,6 @@ class Xml2Ic:
                 else:
                     self.logger.info("VHDL top level found!")
 
-               
-                '''    
                 vhdl_id = []
                 vhdl_address = []
                 for node in vhdl_start_node.findall('node'):
@@ -710,61 +708,18 @@ class Xml2Ic:
                 slave_type = snippet
 
                 snippet = "("
-                for i, address in enumerate(sorted(vhdl_address)):
-                    snippet += '{:d} => X"{}",'.format(i, helper.string_io.hex_format(address))
-                snippet = snippet[:-1]
+                for address in sorted(vhdl_address):
+                    snippet += "X\"" + helper.string_io.hex_format(address) + "\","
+                snippet = snippet[0:-1]
                 snippet += ")"
                 slave_base_addr = snippet
 
                 snippet = "("
-                for i, address in enumerate(sorted(vhdl_address)):
-                    snippet += '{:d} => X"{}",'.format(i, helper.string_io.hex_format(vhdl_decoder_mask[str(address)]))
-                snippet = snippet[:-1]
+                for address in sorted(vhdl_address):
+                    snippet += "X\"" + helper.string_io.hex_format(vhdl_decoder_mask[str(address)]) + "\","
+                snippet = snippet[0:-1]
                 snippet += ")"
                 slave_mask = snippet
-                '''
-                vhdl_id = []
-                vhdl_address = []
-                for node in vhdl_start_node.findall('node'):
-                    vhdl_id.append(node.get('id'))
-                    vhdl_address.append(int(node.get('address'), 16))
-
-                vhdl_decoder_mask = get_decoder_mask(vhdl_address)
-                max_len = helper.string_io.get_max_len(vhdl_id)
-
-                # ------------------------------------------------------------------
-                # Enum type for slave IDs
-                # ------------------------------------------------------------------
-                snippet = "type " + options.vhdl_record_name + " is (\n"
-                for address in sorted(vhdl_address):
-                    ident = vhdl_id[vhdl_address.index(address)]
-                    snippet += "\t" + "id_" + ident + helper.string_io.add_space(ident, max_len) + ",\n"
-                snippet = snippet[:-2]
-                snippet += "\n);\n"
-                snippet = helper.string_io.indent(snippet, 1)
-                snippet = re.sub(r"\t", "   ", snippet)
-                slave_type = snippet
-
-                # ------------------------------------------------------------------
-                # Base address aggregate
-                # ------------------------------------------------------------------
-                entries = []
-                for i, address in enumerate(sorted(vhdl_address)):
-                    entries.append('{:d} => X"{}"'.format(i, helper.string_io.hex_format(address)))
-                slave_base_addr = "(" + ", ".join(entries) + ")"
-
-                # ------------------------------------------------------------------
-                # Decoder mask aggregate
-                # ------------------------------------------------------------------
-                entries = []
-                for i, address in enumerate(sorted(vhdl_address)):
-                    entries.append(
-                        '{:d} => X"{}"'.format(
-                            i,
-                            helper.string_io.hex_format(vhdl_decoder_mask[str(address)])
-                        )
-                    )
-                slave_mask = "(" + ", ".join(entries) + ")"
                 #
                 # MMAP PACKAGE
                 #
@@ -808,21 +763,6 @@ class Xml2Ic:
                 vhdl_str = vhdl_str.replace("<TOP_LEVEL>", options.vhdl_top)
 
                 vhdl_file_name = bus.name + "_" + options.vhdl_top + "_ic.vhd"
-
-                print("XML2IC FILE:", __file__)
-                print("slave_base_addr:", repr(slave_base_addr))
-                print("slave_mask:", repr(slave_mask))
-                print("MMAP OUTPUT FILE:", os.path.abspath(os.path.join(vhdl_output_folder, vhdl_file_name)))
-
-                if "0 =>" not in slave_base_addr:
-                    raise RuntimeError(f"Bad slave_base_addr generated: {slave_base_addr}")
-
-                if "0 =>" not in slave_mask:
-                    raise RuntimeError(f"Bad slave_mask generated: {slave_mask}")
-
-                for line in vhdl_str.splitlines():
-                    if "c_axi4lite_mmap_baddr" in line or "c_axi4lite_mmap_mask" in line:
-                        print("GENERATED LINE:", line)
                 helper.string_io.write_vhdl_file(vhdl_file_name, vhdl_output_folder, vhdl_str)
                 #
                 # EXAMPLE
@@ -855,13 +795,6 @@ class Xml2Ic:
                 #print vhdl_str
 
                 vhdl_file_name = bus.name + "_" + options.vhdl_top + "_example.vho"
-                print("slave_base_addr =", repr(slave_base_addr))
-                print("slave_mask      =", repr(slave_mask))
-                print("writing file    =", os.path.abspath(os.path.join(vhdl_output_folder, vhdl_file_name)))
-
-                for line in vhdl_str.splitlines():
-                    if "c_axi4lite_mmap_baddr" in line or "c_axi4lite_mmap_mask" in line:
-                        print(line)
                 helper.string_io.write_vhdl_file(vhdl_file_name, vhdl_output_folder, vhdl_str)
             #
             # XML generation
