@@ -823,12 +823,24 @@ class Xml2Slave:
                 vhdl_text = vhdl_text.replace("<BUS_LIBRARY>", options.bus_library)
                 vhdl_text = vhdl_text.replace("<SLAVE_NAME>", xml_mm.root.get('id'))
 
+                
                 helper.string_io.write_vhdl_file("ipb" + "_" + xml_mm.root.get('id') + "_dp_ram.vhd", vhdl_output_folder, vhdl_text)
+
+                template_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "template")
+                jasper_backend = os.environ.get("JASPER_BACKEND", "").lower()
+
+                if jasper_backend == "quartus":
+                    asym_template = "asym_bram_tdp_intel.vhd"
+                else:
+                    asym_template = "asym_bram_tdp.vhd"
+
+                asym_bram_tdp_text = helper.string_io.read_template_file(os.path.join(template_dir, asym_template))
+                helper.string_io.write_vhdl_file("asym_bram_tdp.vhd",vhdl_output_folder,asym_bram_tdp_text)
 
                 # Need to add the asym_bram_tdp.vhd file to the vhdl_output_dir
                 # - Silly hack, I know. Apologies.
-                asym_bram_tdp_text = helper.string_io.read_template_file(os.path.dirname(os.path.abspath(__file__)) + "/template/" + "asym_bram_tdp.vhd")
-                helper.string_io.write_vhdl_file("asym_bram_tdp.vhd", vhdl_output_folder, asym_bram_tdp_text)
+                #asym_bram_tdp_text = helper.string_io.read_template_file(os.path.dirname(os.path.abspath(__file__)) + "/template/" + "asym_bram_tdp.vhd")
+                #helper.string_io.write_vhdl_file("asym_bram_tdp.vhd", vhdl_output_folder, asym_bram_tdp_text)
 
 
         self.logger.info("Done!")
